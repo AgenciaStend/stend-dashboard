@@ -329,20 +329,34 @@ function setCss(varName, val) { document.documentElement.style.setProperty(varNa
 
 // ─── GOOGLE SHEETS READER ────────────────────────────────────────────────────
 async function fetchSheet(spreadsheetId, sheetName) {
-  const url = `https://docs.google.com/spreadsheets/d/${spreadsheetId}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(sheetName)}`;
+  const url = `https://docs.google.com/spreadsheets/d/${spreadsheetId}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(sheetName)}&headers=1`;
   try {
-    const res = await fetch(url);
+    const res = await fetch(url, { mode: 'cors' });
     const text = await res.text();
-    // Strip Google's JSONP wrapper: google.visualization.Query.setResponse({...})
-    const json = JSON.parse(text.match(/google\.visualization\.Query\.setResponse\(([\s\S]*)\)/)[1]);
-    if (json.status !== 'ok') return null;
-    const cols = json.table.cols.map(c => c.label || c.id);
-    const rows = json.table.rows.map(row =>
-      Object.fromEntries(cols.map((col, i) => [col, row.c[i]?.v ?? null]))
+
+    // Remove o wrapper JSONP do Google
+    const clean = text
+      .replace(/^[^(]+\(/, '')  // remove tudo antes do (
+      .replace(/\);?\s*$/, ''); // remove o ) do final
+
+    const json = JSON.parse(clean);
+    if (!json.table || !json.table.rows) return null;
+
+    const cols = json.table.cols.map((c, i) =>
+      (c.label || c.id || 'col' + i).trim().toLowerCase()
+        .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+        .replace(/\s+/g, '_')
     );
-    return rows;
-  } catch (e) {
-    console.warn(`Erro ao ler aba "${sheetName}":`, e.message);
+
+    return json.table.rows
+      .filter(row => row && row.c)
+      .map(row =>
+        Object.fromEntries(
+          cols.map((col, i) => [col, row.c[i]?.v ?? null])
+        )
+      );
+  } catch(e) {
+    console.warn('Erro ao ler aba "' + sheetName + '":', e.message);
     return null;
   }
 }
