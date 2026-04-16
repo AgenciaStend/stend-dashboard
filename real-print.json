@@ -11,6 +11,7 @@
   "aba_orcamentos": "orcamentos",
   "aba_vendas": "vendas",
   "aba_historico": "historico",
+  "aba_historico_semanal": "historico_semanal",
   "meta_roas": 4,
   "meta_conversao": 15,
   "ativo": true
