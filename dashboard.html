@@ -329,34 +329,49 @@ function setCss(varName, val) { document.documentElement.style.setProperty(varNa
 
 // ─── GOOGLE SHEETS READER ────────────────────────────────────────────────────
 async function fetchSheet(spreadsheetId, sheetName) {
-  const url = `https://docs.google.com/spreadsheets/d/${spreadsheetId}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(sheetName)}&headers=1`;
+  // Método 1: gviz/tq (mais completo)
   try {
-    const res = await fetch(url, { mode: 'cors' });
+    const url = `https://docs.google.com/spreadsheets/d/${spreadsheetId}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(sheetName)}&headers=1`;
+    const res  = await fetch(url);
+    if (!res.ok) throw new Error('HTTP ' + res.status);
     const text = await res.text();
-
-    // Remove o wrapper JSONP do Google
-    const clean = text
-      .replace(/^[^(]+\(/, '')  // remove tudo antes do (
-      .replace(/\);?\s*$/, ''); // remove o ) do final
-
-    const json = JSON.parse(clean);
-    if (!json.table || !json.table.rows) return null;
-
+    // Remove wrapper JSONP do Google: google.visualization.Query.setResponse({...});
+    const clean = text.replace(/^[\s\S]*?setResponse\(/, '').replace(/\);\s*$/, '');
+    const json  = JSON.parse(clean);
+    if (json.status !== 'ok' || !json.table) throw new Error('status: ' + json.status);
     const cols = json.table.cols.map((c, i) =>
-      (c.label || c.id || 'col' + i).trim().toLowerCase()
-        .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-        .replace(/\s+/g, '_')
+      (c.label || c.id || 'col'+i).trim()
+        .toLowerCase()
+        .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+        .replace(/\s+/g,'_')
     );
+    const rows = (json.table.rows || [])
+      .filter(r => r && r.c)
+      .map(r => Object.fromEntries(cols.map((col,i) => [col, r.c[i]?.v ?? null])));
+    console.log(`✅ Aba "${sheetName}": ${rows.length} linhas via gviz`);
+    return rows.length ? rows : null;
+  } catch(e1) {
+    console.warn(`⚠️ gviz falhou para "${sheetName}": ${e1.message} — tentando CSV...`);
+  }
 
-    return json.table.rows
-      .filter(row => row && row.c)
-      .map(row =>
-        Object.fromEntries(
-          cols.map((col, i) => [col, row.c[i]?.v ?? null])
-        )
-      );
-  } catch(e) {
-    console.warn('Erro ao ler aba "' + sheetName + '":', e.message);
+  // Método 2: CSV export (fallback)
+  try {
+    const url = `https://docs.google.com/spreadsheets/d/${spreadsheetId}/export?format=csv&sheet=${encodeURIComponent(sheetName)}`;
+    const res  = await fetch(url);
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const text = await res.text();
+    const lines = text.trim().split('\n').map(l => l.split(',').map(v => v.replace(/^"|"$/g,'').trim()));
+    if (lines.length < 2) throw new Error('sem dados');
+    const cols = lines[0].map(h => h.toLowerCase().normalize('NFD')
+      .replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,'_'));
+    const rows = lines.slice(1)
+      .filter(l => l.some(v => v))
+      .map(l => Object.fromEntries(cols.map((col,i) => [col, l[i] || null])));
+    console.log(`✅ Aba "${sheetName}": ${rows.length} linhas via CSV`);
+    return rows.length ? rows : null;
+  } catch(e2) {
+    console.error(`❌ Ambos métodos falharam para "${sheetName}": ${e2.message}`);
+    console.error('👉 Verifique: 1) Planilha compartilhada como pública? 2) Nome da aba correto?');
     return null;
   }
 }
