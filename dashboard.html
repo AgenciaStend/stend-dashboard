@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard · Carregando...</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --brand:#F7C435;--brand-dim:#C49A20;--brand-glow:rgba(247,196,53,0.13);--brand-border:rgba(247,196,53,0.22);
+  --bg:#0A0A0C;--card:#111115;--elevated:#18181F;
+  --border:rgba(255,255,255,0.07);--border2:rgba(255,255,255,0.12);
+  --text:#F0EFE8;--text2:#888884;--text3:#444448;
+  --green:#3ED98A;--red:#FF5A5A;--blue:#4A9EFF;
+}
+html,body{min-height:100vh;background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px}
+::-webkit-scrollbar{width:4px}::-webkit-scrollbar-thumb{background:var(--border2);border-radius:4px}
+
+/* LOADING SCREEN */
+.loading-screen{position:fixed;inset:0;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;z-index:999;transition:opacity .4s}
+.loading-screen.hide{opacity:0;pointer-events:none}
+.loading-logo{width:48px;height:48px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-weight:800;font-size:22px;color:#0A0A0C;background:var(--brand)}
+.loading-text{font-family:'Syne',sans-serif;font-size:14px;color:var(--text2)}
+.loading-bar{width:160px;height:2px;background:var(--border);border-radius:2px;overflow:hidden}
+.loading-fill{height:100%;background:var(--brand);border-radius:2px;animation:loadFill 1.8s ease-in-out infinite}
+@keyframes loadFill{0%{width:0;margin-left:0}50%{width:60%;margin-left:20%}100%{width:0;margin-left:100%}}
+
+/* TOPBAR */
+.topbar{padding:0 28px;height:62px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:14px;background:rgba(10,10,12,.95);position:sticky;top:0;z-index:50;backdrop-filter:blur(10px);flex-wrap:wrap}
+.logo{display:flex;align-items:center;gap:10px;text-decoration:none;color:inherit}
+.logo-r{width:30px;height:30px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-weight:800;font-size:14px;color:#0A0A0C}
+.logo-t{font-family:'Syne',sans-serif;font-weight:700;font-size:14px}
+.topbar-div{width:1px;height:18px;background:var(--border)}
+.topbar-title{font-family:'Syne',sans-serif;font-weight:600;font-size:13px;color:var(--text2)}
+.topbar-right{margin-left:auto;display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+.ctrl-select{background:var(--elevated);border:1px solid var(--border2);color:var(--text);padding:6px 26px 6px 11px;border-radius:7px;font-family:'DM Sans',sans-serif;font-size:11px;cursor:pointer;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 9px center;min-width:140px;outline:none}
+.ctrl-select:focus{border-color:var(--brand-border)}
+.date-box{display:flex;align-items:center;gap:5px;padding:6px 11px;border-radius:7px;background:var(--elevated);border:1px solid var(--border2);font-size:11px;color:var(--text2);white-space:nowrap}
+.live-dot{width:6px;height:6px;border-radius:50%;background:var(--green);flex-shrink:0}
+.back-btn{display:flex;align-items:center;gap:5px;padding:6px 12px;border-radius:7px;background:var(--elevated);border:1px solid var(--border);color:var(--text2);font-size:11px;cursor:pointer;text-decoration:none;transition:all .15s}
+.back-btn:hover{border-color:var(--border2);color:var(--text)}
+
+/* CONTENT */
+.content{padding:20px 28px;display:flex;flex-direction:column;gap:16px}
+
+/* ERROR STATE */
+.error-box{background:rgba(255,90,90,.08);border:1px solid rgba(255,90,90,.2);border-radius:12px;padding:24px;text-align:center;color:var(--red)}
+.error-box h3{font-family:'Syne',sans-serif;font-weight:700;font-size:16px;margin-bottom:8px}
+.error-box p{font-size:13px;opacity:.8}
+
+/* SECTION BOX */
+.sbox{background:var(--card);border:1px solid var(--border);border-radius:13px;padding:18px 20px;position:relative;overflow:hidden}
+.sbox::before{content:'';position:absolute;top:0;left:0;right:0;height:2px}
+.sbox.google::before{background:linear-gradient(90deg,#4285F4,#34A853)}
+.sbox.meta::before{background:linear-gradient(90deg,#1877F2,#0099FF)}
+.sbox.orc::before{background:linear-gradient(90deg,var(--brand),var(--brand-dim))}
+.sbox.sales::before{background:linear-gradient(90deg,var(--green),#1DA862)}
+.sbox.charts-box::before{background:linear-gradient(90deg,var(--blue),var(--brand))}
+
+/* SECTION HEADER */
+.sh{display:flex;align-items:center;justify-content:space-between;margin-bottom:13px}
+.st{display:flex;align-items:center;gap:8px;font-family:'Syne',sans-serif;font-weight:600;font-size:13px;letter-spacing:-.1px}
+.sbadge{font-size:9px;padding:2px 7px;border-radius:20px;font-weight:500;letter-spacing:.4px}
+.bg{background:rgba(66,133,244,.15);color:#4A9EFF;border:1px solid rgba(74,158,255,.2)}
+.bm{background:rgba(24,119,242,.15);color:#5B9FEF;border:1px solid rgba(91,159,239,.2)}
+.by{background:var(--brand-glow);color:var(--brand);border:1px solid var(--brand-border)}
+.bgs{background:rgba(62,217,138,.12);color:var(--green);border:1px solid rgba(62,217,138,.2)}
+.sr{display:flex;align-items:center;gap:5px}
+.sd{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.section-link{font-size:11px;color:var(--text2);cursor:pointer;text-decoration:none;transition:color .15s}
+.section-link:hover{color:var(--brand)}
+
+/* METRICS GRID */
+.mg{display:grid;gap:10px}
+.g6{grid-template-columns:repeat(6,1fr)}
+.g5{grid-template-columns:repeat(5,1fr)}
+.g4{grid-template-columns:repeat(4,1fr)}
+.g2{grid-template-columns:1fr 1fr}
+
+/* METRIC CARD */
+.mc{background:var(--elevated);border:1px solid var(--border);border-radius:9px;padding:12px 14px;transition:all .2s}
+.mc:hover{border-color:var(--border2);background:#1C1C24}
+.mc.ag{background:var(--brand-glow);border-color:var(--brand-border)}
+.mc.gr{background:rgba(62,217,138,.06);border-color:rgba(62,217,138,.2)}
+.ml{font-size:10px;color:var(--text2);margin-bottom:5px;font-weight:400;letter-spacing:.2px}
+.mv{font-family:'Syne',sans-serif;font-weight:700;font-size:20px;letter-spacing:-.5px;color:var(--text);line-height:1}
+.mv.gold{color:var(--brand)}
+.mv.green{color:var(--green)}
+.mv.muted{color:var(--text2);font-size:16px}
+.md{display:inline-flex;align-items:center;gap:2px;font-size:10px;font-weight:500;margin-top:5px;padding:2px 6px;border-radius:3px}
+.du{background:rgba(62,217,138,.12);color:var(--green)}
+.ddn{background:rgba(255,90,90,.12);color:var(--red)}
+.dn{background:rgba(136,136,132,.1);color:var(--text2)}
+.divr{border:none;border-top:1px solid var(--border);margin:10px 0}
+.inv-label{font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;font-weight:500;margin-bottom:8px}
+
+/* ROWS */
+.platforms-row{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.business-row{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.charts-row{display:grid;grid-template-columns:220px 1fr 1fr;gap:14px}
+.bottom-row{display:grid;grid-template-columns:1fr 2fr;gap:14px}
+
+/* CHART BOX */
+.cb{background:var(--card);border:1px solid var(--border);border-radius:13px;padding:18px 20px}
+.ct{font-family:'Syne',sans-serif;font-weight:600;font-size:12px;letter-spacing:-.1px;margin-bottom:12px}
+.legend-row{display:flex;gap:14px;margin-bottom:10px;flex-wrap:wrap}
+.leg{display:flex;align-items:center;gap:4px;font-size:10px;color:var(--text2)}
+.leg-dot{width:8px;height:8px;border-radius:2px;flex-shrink:0}
+
+/* FUNNEL */
+.funnel{display:flex;flex-direction:column;align-items:center;gap:2px}
+.fs{display:flex;align-items:center;justify-content:space-between;border-radius:5px;padding:9px 12px;font-size:11px;font-weight:500;transition:opacity .15s}
+.fs:hover{opacity:.85}
+.fl{color:rgba(255,255,255,.9)}
+.fv{font-family:'Syne',sans-serif;font-weight:700;font-size:13px}
+
+/* KPI LIST */
+.kpi-list{display:flex;flex-direction:column;gap:8px}
+.kpi-row{display:flex;align-items:center;justify-content:space-between;padding:9px 12px;background:var(--elevated);border-radius:7px;border:1px solid var(--border)}
+.kpi-name{font-size:11px;color:var(--text2)}
+.kpi-val{font-family:'Syne',sans-serif;font-weight:600;font-size:13px;color:var(--text)}
+.kpi-val.gold{color:var(--brand)}
+.kpi-val.green{color:var(--green)}
+
+/* NO DATA */
+.no-data{font-size:11px;color:var(--text3);font-style:italic}
+
+/* RESPONSIVE */
+@media(max-width:1100px){.g6{grid-template-columns:repeat(3,1fr)}.charts-row{grid-template-columns:1fr 1fr}.bottom-row{grid-template-columns:1fr}}
+@media(max-width:800px){.platforms-row,.business-row{grid-template-columns:1fr}.g6,.g5,.g4{grid-template-columns:repeat(2,1fr)}.charts-row{grid-template-columns:1fr}.content{padding:14px 16px}}
+
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.sbox,.cb{animation:fadeUp .35s ease both}
+.sbox:nth-child(2){animation-delay:.04s}.sbox:nth-child(3){animation-delay:.08s}
+.cb:nth-child(2){animation-delay:.06s}.cb:nth-child(3){animation-delay:.1s}
+</style>
+</head>
+<body>
+
+<!-- LOADING -->
+<div class="loading-screen" id="loadingScreen">
+  <div class="loading-logo" id="loadingLogo">R</div>
+  <div class="loading-text" id="loadingText">Carregando dashboard...</div>
+  <div class="loading-bar"><div class="loading-fill"></div></div>
+</div>
+
+<!-- TOPBAR -->
+<header class="topbar" id="topbar" style="display:none">
+  <a class="back-btn" href="index.html">← Agência</a>
+  <div class="topbar-div"></div>
+  <a class="logo" id="topbarLogo" href="#">
+    <div class="logo-r" id="logoR">R</div>
+    <div class="logo-t" id="logoText">—</div>
+  </a>
+  <span class="topbar-title" id="topbarSeg"></span>
+  <div class="topbar-right">
+    <div class="date-box"><div class="live-dot"></div><span id="dateRange">Hoje</span></div>
+    <select class="ctrl-select" id="periodSelect" onchange="changePeriod()">
+      <option value="7">Últimos 7 dias</option>
+      <option value="30" selected>Últimos 30 dias</option>
+      <option value="90">Últimos 90 dias</option>
+      <option value="mes">Este mês</option>
+    </select>
+  </div>
+</header>
+
+<!-- CONTENT -->
+<div class="content" id="mainContent" style="display:none">
+
+  <!-- GOOGLE ADS -->
+  <div class="sbox google">
+    <div class="sh">
+      <div class="st">
+        <svg width="15" height="15" viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5z" fill="#4285F4"/><path d="M2 17l10 5 10-5" stroke="#34A853" stroke-width="2.5" fill="none"/><path d="M2 12l10 5 10-5" stroke="#FBBC04" stroke-width="2.5" fill="none"/></svg>
+        Google ADS
+        <span class="sbadge bg">GOOGLE</span>
+      </div>
+      <div class="sr">
+        <div class="sd" id="googleStatus" style="background:var(--text3)"></div>
+        <span style="font-size:10px;color:var(--text2)" id="googleStatusText">Carregando...</span>
+      </div>
+    </div>
+    <div class="mg g6" id="googleMetrics">
+      <div class="mc"><div class="ml">Impressões</div><div class="mv muted" id="g-impressoes">—</div><div class="md dn" id="g-impressoes-d">N/A</div></div>
+      <div class="mc"><div class="ml">Cliques</div><div class="mv muted" id="g-cliques">—</div><div class="md dn" id="g-cliques-d">N/A</div></div>
+      <div class="mc"><div class="ml">CTR</div><div class="mv muted" id="g-ctr">—</div><div class="md dn" id="g-ctr-d">N/A</div></div>
+      <div class="mc"><div class="ml">Impr. (Top) %</div><div class="mv muted" id="g-imptop">—</div><div class="md dn" id="g-imptop-d">N/A</div></div>
+      <div class="mc"><div class="ml">Conversões</div><div class="mv muted" id="g-conv">—</div><div class="md dn" id="g-conv-d">N/A</div></div>
+      <div class="mc"><div class="ml">Mensagens</div><div class="mv muted" id="g-msg">—</div><div class="md dn" id="g-msg-d">N/A</div></div>
+    </div>
+    <div class="divr"></div>
+    <div class="inv-label">Investimentos</div>
+    <div class="mg g2">
+      <div class="mc ag"><div class="ml">Custo Total</div><div class="mv gold" id="g-custo">—</div><div class="md dn" id="g-custo-d">N/A</div></div>
+      <div class="mc"><div class="ml">CPC Médio</div><div class="mv" id="g-cpc">—</div><div class="md dn" id="g-cpc-d">N/A</div></div>
+    </div>
+  </div>
+
+  <!-- META ADS -->
+  <div class="sbox meta">
+    <div class="sh">
+      <div class="st">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="#1877F2"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+        Meta ADS
+        <span class="sbadge bm">META</span>
+      </div>
+      <div class="sr">
+        <div class="sd" id="metaStatus" style="background:var(--text3)"></div>
+        <span style="font-size:10px;color:var(--text2)" id="metaStatusText">Carregando...</span>
+      </div>
+    </div>
+    <div class="mg g6">
+      <div class="mc"><div class="ml">Alcance</div><div class="mv muted" id="m-alcance">—</div><div class="md dn" id="m-alcance-d">N/A</div></div>
+      <div class="mc"><div class="ml">Cliques</div><div class="mv muted" id="m-cliques">—</div><div class="md dn" id="m-cliques-d">N/A</div></div>
+      <div class="mc"><div class="ml">CTR</div><div class="mv muted" id="m-ctr">—</div><div class="md dn" id="m-ctr-d">N/A</div></div>
+      <div class="mc"><div class="ml">CPM</div><div class="mv muted" id="m-cpm">—</div><div class="md dn" id="m-cpm-d">N/A</div></div>
+      <div class="mc"><div class="ml">Conversões</div><div class="mv muted" id="m-conv">—</div><div class="md dn" id="m-conv-d">N/A</div></div>
+      <div class="mc"><div class="ml">Mensagens</div><div class="mv muted" id="m-msg">—</div><div class="md dn" id="m-msg-d">N/A</div></div>
+    </div>
+    <div class="divr"></div>
+    <div class="inv-label">Investimentos</div>
+    <div class="mg g2">
+      <div class="mc ag"><div class="ml">Custo Total</div><div class="mv gold" id="m-custo">—</div><div class="md dn" id="m-custo-d">N/A</div></div>
+      <div class="mc"><div class="ml">Custo por Mensagem</div><div class="mv" id="m-custoMsg">—</div><div class="md dn" id="m-custoMsg-d">N/A</div></div>
+    </div>
+  </div>
+
+  <!-- ORÇAMENTOS + VENDAS -->
+  <div class="business-row">
+    <div class="sbox orc">
+      <div class="sh">
+        <div class="st">Orçamentos <span class="sbadge by">PLANILHA</span></div>
+      </div>
+      <div class="mg g2" style="gap:8px">
+        <div class="mc ag"><div class="ml">Total Orçado</div><div class="mv gold" id="o-total">—</div></div>
+        <div class="mc"><div class="ml">Qtd. Orçamentos</div><div class="mv" id="o-qtd">—</div></div>
+        <div class="mc"><div class="ml">Custo p/ Orçamento</div><div class="mv" id="o-custo">—</div></div>
+        <div class="mc"><div class="ml">Ticket Médio Orç.</div><div class="mv" id="o-ticket">—</div></div>
+      </div>
+      <div class="mc" style="margin-top:8px"><div class="ml">Conversão de Orçamentos</div><div class="mv" id="o-conv">—</div></div>
+    </div>
+    <div class="sbox sales">
+      <div class="sh">
+        <div class="st">Vendas <span class="sbadge bgs">PLANILHA</span></div>
+      </div>
+      <div class="mg g2" style="gap:8px">
+        <div class="mc gr"><div class="ml">Valor de Venda</div><div class="mv green" id="v-valor">—</div></div>
+        <div class="mc"><div class="ml">Orç. Fechados</div><div class="mv" id="v-fechados">—</div></div>
+        <div class="mc"><div class="ml">Ticket Médio</div><div class="mv" id="v-ticket">—</div></div>
+        <div class="mc"><div class="ml">CAC</div><div class="mv" id="v-cac">—</div></div>
+      </div>
+      <div class="mc ag" style="margin-top:8px">
+        <div class="ml">ROAS</div>
+        <div style="display:flex;align-items:baseline;gap:8px">
+          <div class="mv gold" id="v-roas">—</div>
+          <span style="font-size:11px;color:var(--brand-dim)" id="v-roas-meta"></span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CHARTS ROW -->
+  <div class="charts-row">
+    <!-- FUNIL -->
+    <div class="cb">
+      <div class="ct">Funil de Conversão</div>
+      <div class="funnel" id="funnelChart"></div>
+    </div>
+    <!-- BAR CHART -->
+    <div class="cb">
+      <div class="ct">Orçamentos e Vendas</div>
+      <div class="legend-row">
+        <div class="leg"><div class="leg-dot" style="background:#4A9EFF"></div>Total Orçado</div>
+        <div class="leg"><div class="leg-dot" style="background:#3ED98A"></div>Valor de Venda</div>
+        <div class="leg"><div class="leg-dot" style="background:var(--brand)"></div>Novos Clientes</div>
+      </div>
+      <div style="position:relative;height:200px"><canvas id="barChart" role="img" aria-label="Orçamentos e vendas mensais">Orçamentos e vendas por mês.</canvas></div>
+    </div>
+    <!-- LINE CHART -->
+    <div class="cb">
+      <div class="ct">Faturamento Geral</div>
+      <div class="legend-row">
+        <div class="leg"><div class="leg-dot" style="background:#4A9EFF"></div>Vol. Orçamentos</div>
+        <div class="leg"><div class="leg-dot" style="background:#3ED98A;border:1px dashed rgba(62,217,138,.5)"></div>Vendas Geral</div>
+      </div>
+      <div style="position:relative;height:200px"><canvas id="lineChart" role="img" aria-label="Faturamento geral ao longo do tempo">Faturamento geral.</canvas></div>
+    </div>
+  </div>
+
+  <!-- KPI ROW -->
+  <div class="cb">
+    <div class="ct">Indicadores Chave do Período</div>
+    <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:8px" id="kpiGrid">
+      <div class="kpi-row" style="flex-direction:column;align-items:flex-start"><div class="kpi-name">ROAS</div><div class="kpi-val gold" id="kpi-roas">—</div></div>
+      <div class="kpi-row" style="flex-direction:column;align-items:flex-start"><div class="kpi-name">CAC</div><div class="kpi-val" id="kpi-cac">—</div></div>
+      <div class="kpi-row" style="flex-direction:column;align-items:flex-start"><div class="kpi-name">Conversão Geral</div><div class="kpi-val" id="kpi-conv">—</div></div>
+      <div class="kpi-row" style="flex-direction:column;align-items:flex-start"><div class="kpi-name">Investimento Total</div><div class="kpi-val gold" id="kpi-invest">—</div></div>
+      <div class="kpi-row" style="flex-direction:column;align-items:flex-start"><div class="kpi-name">Ticket Médio</div><div class="kpi-val" id="kpi-ticket">—</div></div>
+      <div class="kpi-row" style="flex-direction:column;align-items:flex-start"><div class="kpi-name">Receita Gerada</div><div class="kpi-val green" id="kpi-receita">—</div></div>
+    </div>
+  </div>
+
+</div><!-- /content -->
+
+<script>
+// ─── UTILITIES ──────────────────────────────────────────────────────────────
+const fmt = {
+  brl: v => v != null && v !== '' ? 'R$ ' + Number(v).toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2}) : '—',
+  pct: v => v != null && v !== '' ? Number(v).toLocaleString('pt-BR', {minimumFractionDigits:1, maximumFractionDigits:1}) + '%' : '—',
+  num: v => v != null && v !== '' ? Number(v).toLocaleString('pt-BR') : '—',
+  x:   v => v != null && v !== '' ? Number(v).toFixed(2) + 'x' : '—',
+};
+
+function delta(val, prev) {
+  if (!val || !prev || prev == 0) return { cls: 'dn', txt: 'N/A' };
+  const pct = ((val - prev) / Math.abs(prev)) * 100;
+  const sign = pct >= 0 ? '+' : '';
+  return {
+    cls: pct >= 0 ? 'du' : 'ddn',
+    txt: `${pct >= 0 ? '↑' : '↓'} ${sign}${pct.toFixed(1)}%`
+  };
+}
+
+function set(id, val) { const el = document.getElementById(id); if (el) el.textContent = val; }
+function setDelta(id, d) { const el = document.getElementById(id); if (el) { el.textContent = d.txt; el.className = 'md ' + d.cls; } }
+function setCss(varName, val) { document.documentElement.style.setProperty(varName, val); }
+
+// ─── GOOGLE SHEETS READER ────────────────────────────────────────────────────
+async function fetchSheet(spreadsheetId, sheetName) {
+  const url = `https://docs.google.com/spreadsheets/d/${spreadsheetId}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(sheetName)}`;
+  try {
+    const res = await fetch(url);
+    const text = await res.text();
+    // Strip Google's JSONP wrapper: google.visualization.Query.setResponse({...})
+    const json = JSON.parse(text.match(/google\.visualization\.Query\.setResponse\(([\s\S]*)\)/)[1]);
+    if (json.status !== 'ok') return null;
+    const cols = json.table.cols.map(c => c.label || c.id);
+    const rows = json.table.rows.map(row =>
+      Object.fromEntries(cols.map((col, i) => [col, row.c[i]?.v ?? null]))
+    );
+    return rows;
+  } catch (e) {
+    console.warn(`Erro ao ler aba "${sheetName}":`, e.message);
+    return null;
+  }
+}
+
+// ─── FUNNEL RENDER ───────────────────────────────────────────────────────────
+function renderFunnel(data) {
+  const steps = [
+    { label: 'Impressões', val: fmt.num(data.impressoes),    bg: '#1A3A6C', w: '100%' },
+    { label: 'Cliques',    val: fmt.num(data.cliques),       bg: '#1A4A8C', w: '90%'  },
+    { label: 'CTR',        val: fmt.pct(data.ctr),           bg: '#1E5AAC', w: '78%'  },
+    { label: 'Mensagens',  val: fmt.num(data.mensagens),     bg: '#2468B8', w: '62%'  },
+    { label: 'Orçamentos', val: fmt.num(data.orcamentos),    bg: '#2A76C4', w: '46%'  },
+    { label: 'Vendas',     val: fmt.num(data.vendas),        bg: 'var(--brand)', w: '30%', dark: true },
+  ];
+  document.getElementById('funnelChart').innerHTML = steps.map(s => `
+    <div class="fs" style="background:${s.bg};width:${s.w}">
+      <span class="fl" style="${s.dark ? 'color:#0A0A0C' : ''}">${s.label}</span>
+      <span class="fv" style="${s.dark ? 'color:#0A0A0C' : ''}">${s.val}</span>
+    </div>
+  `).join('');
+}
+
+// ─── CHARTS ──────────────────────────────────────────────────────────────────
+let barChart, lineChart;
+Chart.defaults.color = '#888884';
+Chart.defaults.borderColor = 'rgba(255,255,255,0.07)';
+Chart.defaults.font.family = "'DM Sans', sans-serif";
+
+function initCharts(historico, brandColor) {
+  const months = historico?.map(r => r.mes || r.month || '') || ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+  const orcData = historico?.map(r => Number(r.orcamentos || r.total_orcado || 0)) || Array(12).fill(0);
+  const venData = historico?.map(r => Number(r.vendas || r.valor_venda || 0)) || Array(12).fill(0);
+  const novData = historico?.map(r => Number(r.novos_clientes || 0)) || Array(12).fill(0);
+
+  if (barChart) barChart.destroy();
+  barChart = new Chart(document.getElementById('barChart'), {
+    type: 'bar',
+    data: {
+      labels: months,
+      datasets: [
+        { label: 'Total Orçado', data: orcData, backgroundColor: 'rgba(74,158,255,0.7)', borderRadius: 4, borderSkipped: false },
+        { label: 'Valor de Venda', data: venData, backgroundColor: 'rgba(62,217,138,0.7)', borderRadius: 4, borderSkipped: false },
+        { label: 'Novos Clientes', data: novData, backgroundColor: brandColor + 'B3', borderRadius: 4, borderSkipped: false },
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { grid: { display: false }, ticks: { font: { size: 10 }, autoSkip: false, maxRotation: 0 } },
+        y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { font: { size: 10 }, callback: v => 'R$' + (v >= 1000 ? (v/1000).toFixed(0)+'k' : v) } }
+      }
+    }
+  });
+
+  if (lineChart) lineChart.destroy();
+  lineChart = new Chart(document.getElementById('lineChart'), {
+    type: 'line',
+    data: {
+      labels: months,
+      datasets: [
+        { label: 'Vol. Orçamentos', data: orcData, borderColor: '#4A9EFF', backgroundColor: 'rgba(74,158,255,0.08)', fill: true, tension: 0.4, pointRadius: 3 },
+        { label: 'Vendas Geral', data: venData, borderColor: '#3ED98A', backgroundColor: 'rgba(62,217,138,0.08)', fill: true, tension: 0.4, pointRadius: 3, borderDash: [4,3] }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { grid: { display: false }, ticks: { font: { size: 10 }, autoSkip: false, maxRotation: 0 } },
+        y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { font: { size: 10 }, callback: v => 'R$' + (v >= 1000 ? (v/1000).toFixed(0)+'k' : v) } }
+      }
+    }
+  });
+}
+
+// ─── POPULATE DASHBOARD ──────────────────────────────────────────────────────
+function populateGoogle(rows) {
+  if (!rows || !rows.length) {
+    document.getElementById('googleStatus').style.background = 'var(--text3)';
+    document.getElementById('googleStatusText').textContent = 'Sem dados';
+    return;
+  }
+  const r = rows[0]; const p = rows[1] || {};
+  set('g-impressoes', fmt.num(r.impressoes)); setDelta('g-impressoes-d', delta(r.impressoes, p.impressoes));
+  set('g-cliques',    fmt.num(r.cliques));    setDelta('g-cliques-d',    delta(r.cliques,    p.cliques));
+  set('g-ctr',        fmt.pct(r.ctr));        setDelta('g-ctr-d',        delta(r.ctr,        p.ctr));
+  set('g-imptop',     fmt.pct(r.impressao_top)); setDelta('g-imptop-d',  delta(r.impressao_top, p.impressao_top));
+  set('g-conv',       fmt.num(r.conversoes)); setDelta('g-conv-d',       delta(r.conversoes, p.conversoes));
+  set('g-msg',        fmt.num(r.mensagens));  setDelta('g-msg-d',        delta(r.mensagens,  p.mensagens));
+  set('g-custo',      fmt.brl(r.custo));      setDelta('g-custo-d',      delta(r.custo,      p.custo));
+  set('g-cpc',        fmt.brl(r.cpc_medio));  setDelta('g-cpc-d',        delta(r.cpc_medio,  p.cpc_medio));
+  // Color classes
+  document.querySelector('#g-ctr')?.classList.remove('muted'); document.querySelector('#g-ctr')?.classList.add('green');
+  document.querySelector('#g-custo')?.classList.remove('muted'); document.querySelector('#g-custo')?.classList.add('gold');
+  document.getElementById('googleStatus').style.background = 'var(--green)';
+  document.getElementById('googleStatusText').textContent = 'Sincronizado';
+}
+
+function populateMeta(rows) {
+  if (!rows || !rows.length) {
+    document.getElementById('metaStatus').style.background = 'var(--brand)';
+    document.getElementById('metaStatusText').textContent = 'Aguardando dados';
+    return;
+  }
+  const r = rows[0]; const p = rows[1] || {};
+  set('m-alcance',   fmt.num(r.alcance));      setDelta('m-alcance-d',   delta(r.alcance,   p.alcance));
+  set('m-cliques',   fmt.num(r.cliques));      setDelta('m-cliques-d',   delta(r.cliques,   p.cliques));
+  set('m-ctr',       fmt.pct(r.ctr));          setDelta('m-ctr-d',       delta(r.ctr,       p.ctr));
+  set('m-cpm',       fmt.brl(r.cpm));          setDelta('m-cpm-d',       delta(r.cpm,       p.cpm));
+  set('m-conv',      fmt.num(r.conversoes));   setDelta('m-conv-d',      delta(r.conversoes,p.conversoes));
+  set('m-msg',       fmt.num(r.mensagens));    setDelta('m-msg-d',       delta(r.mensagens, p.mensagens));
+  set('m-custo',     fmt.brl(r.custo));        setDelta('m-custo-d',     delta(r.custo,     p.custo));
+  set('m-custoMsg',  fmt.brl(r.custo_mensagem)); setDelta('m-custoMsg-d',delta(r.custo_mensagem, p.custo_mensagem));
+  document.getElementById('metaStatus').style.background = 'var(--green)';
+  document.getElementById('metaStatusText').textContent = 'Sincronizado';
+}
+
+function populateOrcamentos(rows) {
+  if (!rows || !rows.length) return;
+  const r = rows[0];
+  set('o-total',  fmt.brl(r.total_orcado));
+  set('o-qtd',    fmt.num(r.quantidade));
+  set('o-custo',  fmt.brl(r.custo_por_orcamento));
+  set('o-ticket', fmt.brl(r.ticket_medio));
+  set('o-conv',   fmt.pct(r.conversao));
+}
+
+function populateVendas(rows, metaRoas) {
+  if (!rows || !rows.length) return;
+  const r = rows[0];
+  set('v-valor',    fmt.brl(r.valor_venda));
+  set('v-fechados', fmt.num(r.orcamentos_fechados));
+  set('v-ticket',   fmt.brl(r.ticket_medio));
+  set('v-cac',      fmt.brl(r.cac));
+  set('v-roas',     fmt.x(r.roas));
+  if (metaRoas) set('v-roas-meta', `· Meta: ${metaRoas}x`);
+  // KPIs
+  set('kpi-roas',    fmt.x(r.roas));
+  set('kpi-cac',     fmt.brl(r.cac));
+  set('kpi-ticket',  fmt.brl(r.ticket_medio));
+  set('kpi-receita', fmt.brl(r.valor_venda));
+}
+
+function populateKpis(gRows, vRows) {
+  const g = gRows?.[0] || {};
+  const v = vRows?.[0]  || {};
+  const invest = (Number(g.custo || 0));
+  set('kpi-invest', fmt.brl(invest));
+  const totalOrc = vRows?.[0]?.orcamentos_fechados || 0;
+  const totalImpr = g.impressoes || 0;
+  set('kpi-conv', totalImpr > 0 && totalOrc > 0 ? fmt.pct(totalOrc / totalImpr * 100) : '—');
+}
+
+// ─── MAIN LOADER ─────────────────────────────────────────────────────────────
+async function init() {
+  const params = new URLSearchParams(location.search);
+  const clientId = params.get('cliente') || 'real-print';
+
+  // Load client config
+  let cfg;
+  try {
+    const res = await fetch(`clientes/${clientId}.json`);
+    cfg = await res.json();
+  } catch {
+    document.getElementById('loadingText').textContent = 'Cliente não encontrado';
+    return;
+  }
+
+  // Apply branding
+  document.title = `${cfg.nome} · Dashboard`;
+  setCss('--brand',        cfg.cor);
+  setCss('--brand-dim',    cfg.cor_secundaria || cfg.cor + 'AA');
+  setCss('--brand-glow',   cfg.cor + '20');
+  setCss('--brand-border', cfg.cor + '38');
+
+  document.getElementById('logoR').textContent   = cfg.logo_inicial;
+  document.getElementById('logoR').style.background = cfg.cor;
+  document.getElementById('logoText').textContent = cfg.logo_texto;
+  document.getElementById('topbarSeg').textContent = cfg.segmento;
+  document.getElementById('loadingLogo').textContent = cfg.logo_inicial;
+  document.getElementById('loadingLogo').style.background = cfg.cor;
+  document.getElementById('loadingText').textContent = `Carregando dados de ${cfg.nome}...`;
+
+  // Update date range
+  const hoje = new Date();
+  const inicio = new Date(); inicio.setDate(hoje.getDate() - 30);
+  document.getElementById('dateRange').textContent =
+    `${inicio.toLocaleDateString('pt-BR', {day:'2-digit',month:'short'})} — ${hoje.toLocaleDateString('pt-BR', {day:'2-digit',month:'short', year:'numeric'})}`;
+
+  // Fetch all sheets in parallel
+  const sheetId = cfg.planilha_id;
+  const [gRows, mRows, oRows, vRows, hRows] = await Promise.all([
+    fetchSheet(sheetId, cfg.aba_google_ads  || 'google_ads'),
+    fetchSheet(sheetId, cfg.aba_meta_ads    || 'meta_ads'),
+    fetchSheet(sheetId, cfg.aba_orcamentos  || 'orcamentos'),
+    fetchSheet(sheetId, cfg.aba_vendas      || 'vendas'),
+    fetchSheet(sheetId, cfg.aba_historico   || 'historico'),
+  ]);
+
+  // Populate
+  populateGoogle(gRows);
+  populateMeta(mRows);
+  populateOrcamentos(oRows);
+  populateVendas(vRows, cfg.meta_roas);
+  populateKpis(gRows, vRows);
+
+  // Funnel
+  renderFunnel({
+    impressoes:  gRows?.[0]?.impressoes,
+    cliques:     gRows?.[0]?.cliques,
+    ctr:         gRows?.[0]?.ctr,
+    mensagens:   gRows?.[0]?.mensagens ?? mRows?.[0]?.mensagens,
+    orcamentos:  oRows?.[0]?.quantidade,
+    vendas:      vRows?.[0]?.orcamentos_fechados,
+  });
+
+  // Charts
+  initCharts(hRows, cfg.cor);
+
+  // Show dashboard
+  setTimeout(() => {
+    document.getElementById('loadingScreen').classList.add('hide');
+    document.getElementById('topbar').style.display = 'flex';
+    document.getElementById('mainContent').style.display = 'flex';
+  }, 600);
+}
+
+function changePeriod() { /* Reload with new period — extend as needed */ init(); }
+
+init();
+</script>
+</body>
+</html>

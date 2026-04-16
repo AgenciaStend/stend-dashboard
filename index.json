@@ -1,0 +1,5 @@
+[
+  { "id": "real-print",       "nome": "Real Print",        "segmento": "Gráfica & Comunicação Visual", "cor": "#F7C435", "inicial": "R", "ativo": true },
+  { "id": "studio-alpha",     "nome": "Studio Alpha",      "segmento": "Design & Branding",            "cor": "#6C63FF", "inicial": "S", "ativo": true },
+  { "id": "mega-construcoes", "nome": "Mega Construções",  "segmento": "Construção Civil",             "cor": "#3ED98A", "inicial": "M", "ativo": true }
+]

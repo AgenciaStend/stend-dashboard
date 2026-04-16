@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Real Print · Painel da Agência</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --gold:#F7C435;--gold-glow:rgba(247,196,53,0.13);--gold-border:rgba(247,196,53,0.22);
+  --bg:#0A0A0C;--card:#111115;--elevated:#18181F;
+  --border:rgba(255,255,255,0.07);--border2:rgba(255,255,255,0.12);
+  --text:#F0EFE8;--text2:#888884;--text3:#444448;
+  --green:#3ED98A;--red:#FF5A5A;
+}
+html,body{min-height:100vh;background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px}
+::-webkit-scrollbar{width:4px}::-webkit-scrollbar-thumb{background:var(--border2);border-radius:4px}
+
+/* TOPBAR */
+.topbar{padding:0 40px;height:64px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:16px;background:rgba(10,10,12,.95);position:sticky;top:0;z-index:50;backdrop-filter:blur(10px)}
+.logo{display:flex;align-items:center;gap:10px}
+.logo-r{width:32px;height:32px;background:var(--gold);border-radius:7px;display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-weight:800;font-size:15px;color:#0A0A0C}
+.logo-t{font-family:'Syne',sans-serif;font-weight:700;font-size:15px}
+.logo-t span{color:var(--gold)}
+.topbar-div{width:1px;height:20px;background:var(--border);margin:0 8px}
+.topbar-sub{font-size:12px;color:var(--text2)}
+.topbar-right{margin-left:auto;display:flex;align-items:center;gap:10px}
+.btn-add{display:flex;align-items:center;gap:6px;padding:8px 16px;border-radius:8px;background:var(--gold);color:#0A0A0C;font-family:'Syne',sans-serif;font-weight:700;font-size:12px;cursor:pointer;border:none;transition:opacity .15s}
+.btn-add:hover{opacity:.88}
+
+/* SEARCH */
+.search-bar{padding:28px 40px 20px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.search-wrap{position:relative;flex:1;max-width:360px}
+.search-input{width:100%;padding:9px 14px 9px 36px;border-radius:9px;background:var(--card);border:1px solid var(--border2);color:var(--text);font-family:'DM Sans',sans-serif;font-size:13px;outline:none;transition:border-color .15s}
+.search-input:focus{border-color:var(--gold-border)}
+.search-icon{position:absolute;left:11px;top:50%;transform:translateY(-50%);color:var(--text3);pointer-events:none}
+.filter-tabs{display:flex;gap:6px}
+.ftab{padding:7px 14px;border-radius:7px;border:1px solid var(--border);background:var(--card);color:var(--text2);font-size:12px;cursor:pointer;transition:all .15s}
+.ftab:hover{border-color:var(--border2);color:var(--text)}
+.ftab.on{background:var(--gold-glow);border-color:var(--gold-border);color:var(--gold)}
+.count-badge{margin-left:auto;font-size:12px;color:var(--text2)}
+
+/* GRID */
+.grid{padding:0 40px 40px;display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px}
+
+/* CLIENT CARD */
+.client-card{
+  background:var(--card);border:1px solid var(--border);border-radius:14px;
+  padding:22px 22px 18px;cursor:pointer;transition:all .2s;text-decoration:none;color:inherit;
+  display:flex;flex-direction:column;gap:0;position:relative;overflow:hidden;
+}
+.client-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--client-color, var(--gold))}
+.client-card:hover{border-color:var(--border2);background:var(--elevated);transform:translateY(-2px)}
+.card-top{display:flex;align-items:center;gap:12px;margin-bottom:16px}
+.card-avatar{
+  width:42px;height:42px;border-radius:10px;
+  display:flex;align-items:center;justify-content:center;
+  font-family:'Syne',sans-serif;font-weight:800;font-size:17px;color:#0A0A0C;
+  flex-shrink:0;background:var(--client-color, var(--gold));
+}
+.card-info{}
+.card-name{font-family:'Syne',sans-serif;font-weight:700;font-size:14px;letter-spacing:-.2px}
+.card-seg{font-size:11px;color:var(--text2);margin-top:2px}
+.card-status{margin-left:auto;font-size:9px;padding:3px 8px;border-radius:20px;font-weight:500;letter-spacing:.4px}
+.status-on{background:rgba(62,217,138,.12);color:var(--green);border:1px solid rgba(62,217,138,.2)}
+.status-off{background:rgba(136,136,132,.08);color:var(--text3);border:1px solid var(--border)}
+
+.card-metrics{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:16px}
+.cm{background:var(--elevated);border:1px solid var(--border);border-radius:7px;padding:8px 10px}
+.cm-label{font-size:9px;color:var(--text2);margin-bottom:3px}
+.cm-val{font-family:'Syne',sans-serif;font-weight:700;font-size:14px;color:var(--text)}
+.cm-val.loading{color:var(--text3);font-size:11px;font-family:'DM Sans',sans-serif;font-weight:400}
+
+.card-footer{display:flex;align-items:center;justify-content:space-between;padding-top:12px;border-top:1px solid var(--border)}
+.card-link{font-size:11px;color:var(--text2);display:flex;align-items:center;gap:4px}
+.card-arrow{font-size:13px;color:var(--text3);transition:transform .2s}
+.client-card:hover .card-arrow{transform:translateX(3px);color:var(--text2)}
+
+/* EMPTY STATE */
+.empty{text-align:center;padding:80px 40px;color:var(--text2)}
+.empty h3{font-family:'Syne',sans-serif;font-weight:700;font-size:18px;color:var(--text);margin-bottom:8px}
+
+/* STATS BANNER */
+.stats-banner{margin:0 40px 20px;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px 24px;display:flex;align-items:center;gap:32px;flex-wrap:wrap}
+.sb-item{display:flex;flex-direction:column;gap:2px}
+.sb-label{font-size:10px;color:var(--text2);letter-spacing:.3px;text-transform:uppercase;font-weight:500}
+.sb-val{font-family:'Syne',sans-serif;font-weight:700;font-size:20px;color:var(--text)}
+.sb-val.gold{color:var(--gold)}
+.sb-val.green{color:var(--green)}
+.sb-div{width:1px;height:32px;background:var(--border)}
+
+/* ADD MODAL */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:200;display:none;align-items:center;justify-content:center;backdrop-filter:blur(4px)}
+.modal-overlay.open{display:flex}
+.modal{background:var(--card);border:1px solid var(--border2);border-radius:16px;padding:28px;width:440px;max-width:90vw}
+.modal h2{font-family:'Syne',sans-serif;font-weight:700;font-size:16px;margin-bottom:6px}
+.modal p{font-size:12px;color:var(--text2);margin-bottom:20px}
+.form-row{margin-bottom:14px}
+.form-label{font-size:11px;color:var(--text2);margin-bottom:5px;display:block;font-weight:500;letter-spacing:.2px;text-transform:uppercase}
+.form-input{width:100%;padding:9px 12px;border-radius:8px;background:var(--elevated);border:1px solid var(--border2);color:var(--text);font-family:'DM Sans',sans-serif;font-size:13px;outline:none;transition:border-color .15s}
+.form-input:focus{border-color:var(--gold-border)}
+.form-hint{font-size:10px;color:var(--text3);margin-top:4px}
+.modal-footer{display:flex;gap:10px;margin-top:20px}
+.btn-cancel{flex:1;padding:10px;border-radius:8px;background:var(--elevated);border:1px solid var(--border2);color:var(--text2);font-family:'DM Sans',sans-serif;font-size:13px;cursor:pointer}
+.btn-save{flex:1;padding:10px;border-radius:8px;background:var(--gold);color:#0A0A0C;font-family:'Syne',sans-serif;font-weight:700;font-size:13px;cursor:pointer;border:none}
+.btn-close-modal{position:absolute;top:16px;right:16px;background:none;border:none;color:var(--text2);font-size:18px;cursor:pointer;padding:4px}
+
+@keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+.client-card{animation:fadeUp .3s ease both}
+</style>
+</head>
+<body>
+
+<!-- TOPBAR -->
+<header class="topbar">
+  <div class="logo">
+    <div class="logo-r">R</div>
+    <div class="logo-t">Real<span>Print</span></div>
+  </div>
+  <div class="topbar-div"></div>
+  <span class="topbar-sub">Painel da Agência</span>
+  <div class="topbar-right">
+    <button class="btn-add" onclick="openModal()">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M12 5v14M5 12h14"/></svg>
+      Novo Cliente
+    </button>
+  </div>
+</header>
+
+<!-- STATS BANNER -->
+<div class="stats-banner" id="statsBanner">
+  <div class="sb-item"><div class="sb-label">Total de Clientes</div><div class="sb-val gold" id="stat-total">—</div></div>
+  <div class="sb-div"></div>
+  <div class="sb-item"><div class="sb-label">Clientes Ativos</div><div class="sb-val green" id="stat-ativos">—</div></div>
+  <div class="sb-div"></div>
+  <div class="sb-item"><div class="sb-label">Com Dados Hoje</div><div class="sb-val" id="stat-dados">—</div></div>
+  <div class="sb-div"></div>
+  <div class="sb-item"><div class="sb-label">Sem Dados</div><div class="sb-val" id="stat-sem">—</div></div>
+</div>
+
+<!-- SEARCH BAR -->
+<div class="search-bar">
+  <div class="search-wrap">
+    <svg class="search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.35-4.35"/></svg>
+    <input class="search-input" type="text" placeholder="Buscar cliente..." id="searchInput" oninput="filterClients()">
+  </div>
+  <div class="filter-tabs">
+    <div class="ftab on" onclick="setFilter('todos',this)">Todos</div>
+    <div class="ftab" onclick="setFilter('ativos',this)">Ativos</div>
+    <div class="ftab" onclick="setFilter('inativos',this)">Inativos</div>
+  </div>
+  <div class="count-badge" id="countBadge">0 clientes</div>
+</div>
+
+<!-- GRID -->
+<div class="grid" id="clientGrid"></div>
+
+<!-- ADD MODAL -->
+<div class="modal-overlay" id="modal" onclick="closeModalOutside(event)">
+  <div class="modal" style="position:relative">
+    <button class="btn-close-modal" onclick="closeModal()">✕</button>
+    <h2>Adicionar Novo Cliente</h2>
+    <p>Preencha as informações básicas. Você poderá configurar a planilha depois.</p>
+    <div class="form-row">
+      <label class="form-label">Nome do Cliente</label>
+      <input class="form-input" id="f-nome" placeholder="Ex: Empresa XYZ" type="text">
+    </div>
+    <div class="form-row">
+      <label class="form-label">Segmento</label>
+      <input class="form-input" id="f-seg" placeholder="Ex: E-commerce, Clínica, Educação..." type="text">
+    </div>
+    <div class="form-row">
+      <label class="form-label">Cor da Marca</label>
+      <input class="form-input" id="f-cor" placeholder="#F7C435" type="text" value="#4A9EFF">
+    </div>
+    <div class="form-row">
+      <label class="form-label">ID da Planilha Google Sheets</label>
+      <input class="form-input" id="f-sheet" placeholder="Cole o ID da planilha aqui" type="text">
+      <div class="form-hint">O ID está na URL da planilha: docs.google.com/spreadsheets/d/<strong>ID_AQUI</strong>/edit</div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeModal()">Cancelar</button>
+      <button class="btn-save" onclick="addClient()">Criar Cliente →</button>
+    </div>
+  </div>
+</div>
+
+<script>
+let allClients = [];
+let activeFilter = 'todos';
+
+async function loadClients() {
+  try {
+    const res = await fetch('clientes/index.json');
+    allClients = await res.json();
+  } catch {
+    // Demo fallback
+    allClients = [
+      { id: 'real-print',       nome: 'Real Print',       segmento: 'Gráfica & Comunicação Visual', cor: '#F7C435', inicial: 'R', ativo: true },
+      { id: 'studio-alpha',     nome: 'Studio Alpha',     segmento: 'Design & Branding',            cor: '#6C63FF', inicial: 'S', ativo: true },
+      { id: 'mega-construcoes', nome: 'Mega Construções', segmento: 'Construção Civil',              cor: '#3ED98A', inicial: 'M', ativo: true }
+    ];
+  }
+  updateStats();
+  renderGrid(allClients);
+}
+
+function updateStats() {
+  const ativos = allClients.filter(c => c.ativo).length;
+  document.getElementById('stat-total').textContent = allClients.length;
+  document.getElementById('stat-ativos').textContent = ativos;
+  document.getElementById('stat-dados').textContent = '—';
+  document.getElementById('stat-sem').textContent = '—';
+}
+
+function setFilter(f, el) {
+  activeFilter = f;
+  document.querySelectorAll('.ftab').forEach(t => t.classList.remove('on'));
+  el.classList.add('on');
+  filterClients();
+}
+
+function filterClients() {
+  const q = document.getElementById('searchInput').value.toLowerCase();
+  let filtered = allClients.filter(c => {
+    const matchSearch = c.nome.toLowerCase().includes(q) || c.segmento.toLowerCase().includes(q);
+    const matchFilter = activeFilter === 'todos' ? true : activeFilter === 'ativos' ? c.ativo : !c.ativo;
+    return matchSearch && matchFilter;
+  });
+  renderGrid(filtered);
+}
+
+function renderGrid(clients) {
+  const grid = document.getElementById('clientGrid');
+  document.getElementById('countBadge').textContent = `${clients.length} cliente${clients.length !== 1 ? 's' : ''}`;
+  if (!clients.length) {
+    grid.innerHTML = `<div class="empty" style="grid-column:1/-1"><h3>Nenhum cliente encontrado</h3><p>Tente outro termo ou adicione um novo cliente.</p></div>`;
+    return;
+  }
+  grid.innerHTML = clients.map((c, i) => `
+    <a class="client-card" href="dashboard.html?cliente=${c.id}" style="--client-color:${c.cor}; animation-delay:${i * 0.05}s">
+      <div class="card-top">
+        <div class="card-avatar" style="background:${c.cor}">${c.inicial}</div>
+        <div class="card-info">
+          <div class="card-name">${c.nome}</div>
+          <div class="card-seg">${c.segmento}</div>
+        </div>
+        <div class="card-status ${c.ativo ? 'status-on' : 'status-off'}">${c.ativo ? '● ATIVO' : '○ INATIVO'}</div>
+      </div>
+      <div class="card-metrics">
+        <div class="cm"><div class="cm-label">Investimento</div><div class="cm-val loading" id="inv-${c.id}">Carregando...</div></div>
+        <div class="cm"><div class="cm-label">ROAS</div><div class="cm-val loading" id="roas-${c.id}">—</div></div>
+        <div class="cm"><div class="cm-label">Orçamentos</div><div class="cm-val loading" id="orc-${c.id}">—</div></div>
+      </div>
+      <div class="card-footer">
+        <span class="card-link">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+          Abrir Dashboard
+        </span>
+        <span class="card-arrow">→</span>
+      </div>
+    </a>
+  `).join('');
+}
+
+function openModal() { document.getElementById('modal').classList.add('open'); }
+function closeModal() { document.getElementById('modal').classList.remove('open'); }
+function closeModalOutside(e) { if (e.target.id === 'modal') closeModal(); }
+
+function addClient() {
+  const nome = document.getElementById('f-nome').value.trim();
+  if (!nome) { alert('Informe o nome do cliente.'); return; }
+  const id = nome.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,'-').replace(/[^a-z0-9-]/g,'');
+  const cor = document.getElementById('f-cor').value || '#4A9EFF';
+  alert(`Cliente "${nome}" criado!\n\nID gerado: ${id}\n\nPróximo passo: crie o arquivo clientes/${id}.json com as configurações e adicione na lista clientes/index.json.\n\nConsulte o arquivo clientes/real-print.json como modelo.`);
+  closeModal();
+}
+
+loadClients();
+</script>
+</body>
+</html>

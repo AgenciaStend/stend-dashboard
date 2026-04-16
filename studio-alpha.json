@@ -1,0 +1,17 @@
+{
+  "nome": "Studio Alpha",
+  "segmento": "Design & Branding",
+  "cor": "#6C63FF",
+  "cor_secundaria": "#4A43CC",
+  "logo_texto": "Studio Alpha",
+  "logo_inicial": "S",
+  "planilha_id": "SEU_ID_DA_PLANILHA_AQUI",
+  "aba_google_ads": "google_ads",
+  "aba_meta_ads": "meta_ads",
+  "aba_orcamentos": "orcamentos",
+  "aba_vendas": "vendas",
+  "aba_historico": "historico",
+  "meta_roas": 5,
+  "meta_conversao": 20,
+  "ativo": true
+}
