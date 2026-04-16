@@ -1,0 +1,18 @@
+{
+  "nome": "Real Print",
+  "segmento": "Gráfica & Comunicação Visual",
+  "cor": "#F7C435",
+  "cor_secundaria": "#C49A20",
+  "logo_texto": "Real Print",
+  "logo_inicial": "R",
+  "planilha_id": "1nTnK2m_WnJ0yHXH_LqRx0sbvByi1rnEoFwNF1CKpcMY",
+  "aba_google_ads": "google_ads",
+  "aba_meta_ads": "meta_ads",
+  "aba_orcamentos": "orcamentos",
+  "aba_vendas": "vendas",
+  "aba_historico": "historico",
+  "aba_historico_semanal": "historico_semanal",
+  "meta_roas": 4,
+  "meta_conversao": 15,
+  "ativo": true
+}
