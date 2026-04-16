@@ -163,6 +163,10 @@ html,body{min-height:100vh;background:var(--bg);color:var(--text);font-family:'D
       <option value="90">Últimos 90 dias</option>
       <option value="mes">Este mês</option>
     </select>
+    <select class="ctrl-select" id="viewSelect" onchange="changeView()">
+      <option value="mensal" selected>📅 Visão Mensal</option>
+      <option value="semanal">📊 Visão Semanal</option>
+    </select>
   </div>
 </header>
 
@@ -375,28 +379,25 @@ async function fetchSheet(spreadsheetId, sheetName) {
 
 // ─── FUNNEL RENDER ───────────────────────────────────────────────────────────
 function renderFunnel(data) {
-  // Calculate dynamic widths based on actual values
-  const imp  = parseNum(data.impressoes) || 0;
-  const cli  = parseNum(data.cliques)    || 0;
-  const msg  = parseNum(data.mensagens)  || 0;
-  const orc  = parseNum(data.orcamentos) || 0;
-  const ven  = parseNum(data.vendas)     || 0;
-  const ctr  = parseNum(data.ctr)        || 0;
-  const max  = imp || 1;
-  const pct  = v => Math.max(28, Math.round((v / max) * 100)) + '%';
+  const imp = parseNum(data.impressoes) || 0;
+  const cli = parseNum(data.cliques)    || 0;
+  const msg = parseNum(data.mensagens)  || 0;
+  const orc = parseNum(data.orcamentos) || 0;
+  const ven = parseNum(data.vendas)     || 0;
+  const ctr = parseNum(data.ctr)        || 0;
 
   const steps = [
-    { label: 'Impressões', val: fmt.num(imp), bg: '#1A3A6C', w: '100%' },
-    { label: 'Cliques',    val: fmt.num(cli), bg: '#1A4A8C', w: imp > 0 ? pct(cli * 8) : '85%' },
-    { label: 'CTR',        val: fmt.pct(ctr), bg: '#1E5AAC', w: '72%' },
-    { label: 'Mensagens',  val: msg > 0 ? fmt.num(msg) : '—', bg: '#2468B8', w: '58%' },
-    { label: 'Orçamentos', val: orc > 0 ? fmt.num(orc) : '—', bg: '#2A76C4', w: '44%' },
-    { label: 'Vendas',     val: ven > 0 ? fmt.num(ven) : '—', bg: 'var(--brand)', w: '30%', dark: true },
+    { label: 'Impressões', val: fmt.num(imp),                         bg: '#1A3A6C', w: 100 },
+    { label: 'Cliques',    val: fmt.num(cli),                         bg: '#1A4A8C', w: 88  },
+    { label: 'CTR',        val: fmt.pct(ctr),                         bg: '#1E5AAC', w: 76  },
+    { label: 'Mensagens',  val: msg > 0 ? fmt.num(msg) : '—',         bg: '#2468B8', w: 62  },
+    { label: 'Orçamentos', val: orc > 0 ? fmt.num(orc) : '—',         bg: '#2A76C4', w: 48  },
+    { label: 'Vendas',     val: ven > 0 ? fmt.num(ven) : '—',         bg: 'var(--brand)', w: 34, dark: true },
   ];
   document.getElementById('funnelChart').innerHTML = steps.map(s => `
-    <div class="fs" style="background:${s.bg};width:${s.w}">
-      <span class="fl" style="${s.dark ? 'color:#0A0A0C' : ''}">${s.label}</span>
-      <span class="fv" style="${s.dark ? 'color:#0A0A0C' : ''}">${s.val}</span>
+    <div class="fs" style="background:${s.bg};width:${s.w}%;min-width:120px">
+      <span class="fl" style="${s.dark?'color:#0A0A0C':''};font-size:11px">${s.label}</span>
+      <span class="fv" style="${s.dark?'color:#0A0A0C':''};">${s.val}</span>
     </div>
   `).join('');
 }
@@ -407,11 +408,15 @@ Chart.defaults.color = '#888884';
 Chart.defaults.borderColor = 'rgba(255,255,255,0.07)';
 Chart.defaults.font.family = "'DM Sans', sans-serif";
 
-function initCharts(historico, brandColor) {
-  const months = historico?.map(r => r.mes || r.month || '').filter(Boolean) || ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
-  const orcData = historico?.map(r => parseNum(r.orcamentos) || parseNum(r.total_orcado) || 0) || Array(12).fill(0);
-  const venData = historico?.map(r => parseNum(r.vendas) || parseNum(r.valor_venda) || 0) || Array(12).fill(0);
-  const novData = historico?.map(r => parseNum(r.novos_clientes) || 0) || Array(12).fill(0);
+function initCharts(historico, brandColor, isSemanal) {
+  const labelKey = isSemanal ? 'semana' : 'mes';
+  const months     = historico?.map(r => r[labelKey] || '').filter(Boolean) || ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+  const orcData    = historico?.map(r => parseNum(r.orcamentos)              || 0) || Array(12).fill(0);
+  const venData    = historico?.map(r => parseNum(r.vendas)                  || 0) || Array(12).fill(0);
+  const novOrcData = historico?.map(r => parseNum(r.novos_clientes_orc)      || 0) || Array(12).fill(0);
+  const novVenData = historico?.map(r => parseNum(r.novos_clientes_vendas)   || 0) || Array(12).fill(0);
+  const fatOrcData = historico?.map(r => parseNum(r.faturamento_geral_orc)   || 0) || Array(12).fill(0);
+  const fatVenData = historico?.map(r => parseNum(r.faturamento_geral_vendas)|| 0) || Array(12).fill(0);
 
   if (barChart) barChart.destroy();
   barChart = new Chart(document.getElementById('barChart'), {
@@ -419,9 +424,10 @@ function initCharts(historico, brandColor) {
     data: {
       labels: months,
       datasets: [
-        { label: 'Total Orçado', data: orcData, backgroundColor: 'rgba(74,158,255,0.7)', borderRadius: 4, borderSkipped: false },
-        { label: 'Valor de Venda', data: venData, backgroundColor: 'rgba(62,217,138,0.7)', borderRadius: 4, borderSkipped: false },
-        { label: 'Novos Clientes', data: novData, backgroundColor: brandColor + 'B3', borderRadius: 4, borderSkipped: false },
+        { label: 'Total Orçado',          data: orcData,    backgroundColor: 'rgba(74,158,255,0.7)',  borderRadius: 4, borderSkipped: false },
+        { label: 'Valor de Venda',         data: venData,    backgroundColor: 'rgba(62,217,138,0.7)',  borderRadius: 4, borderSkipped: false },
+        { label: 'Orç. Novos Clientes',    data: novOrcData, backgroundColor: brandColor + 'B3',       borderRadius: 4, borderSkipped: false },
+        { label: 'Venda Novos Clientes',   data: novVenData, backgroundColor: 'rgba(255,90,90,0.7)',   borderRadius: 4, borderSkipped: false },
       ]
     },
     options: {
@@ -440,8 +446,8 @@ function initCharts(historico, brandColor) {
     data: {
       labels: months,
       datasets: [
-        { label: 'Vol. Orçamentos', data: orcData, borderColor: '#4A9EFF', backgroundColor: 'rgba(74,158,255,0.08)', fill: true, tension: 0.4, pointRadius: 3 },
-        { label: 'Vendas Geral', data: venData, borderColor: '#3ED98A', backgroundColor: 'rgba(62,217,138,0.08)', fill: true, tension: 0.4, pointRadius: 3, borderDash: [4,3] }
+        { label: 'Orçamentos Geral',      data: fatOrcData, borderColor: '#4A9EFF', backgroundColor: 'rgba(74,158,255,0.08)', fill: true,  tension: 0.4, pointRadius: 3 },
+        { label: 'Vendas Geral',           data: fatVenData, borderColor: '#3ED98A', backgroundColor: 'rgba(62,217,138,0.08)', fill: true,  tension: 0.4, pointRadius: 3, borderDash: [4,3] }
       ]
     },
     options: {
@@ -574,12 +580,13 @@ async function init() {
 
   // Fetch all sheets in parallel
   const sheetId = cfg.planilha_id;
-  const [gRows, mRows, oRows, vRows, hRows] = await Promise.all([
-    fetchSheet(sheetId, cfg.aba_google_ads  || 'google_ads'),
-    fetchSheet(sheetId, cfg.aba_meta_ads    || 'meta_ads'),
-    fetchSheet(sheetId, cfg.aba_orcamentos  || 'orcamentos'),
-    fetchSheet(sheetId, cfg.aba_vendas      || 'vendas'),
-    fetchSheet(sheetId, cfg.aba_historico   || 'historico'),
+  const [gRows, mRows, oRows, vRows, hRows, hSemRows] = await Promise.all([
+    fetchSheet(sheetId, cfg.aba_google_ads         || 'google_ads'),
+    fetchSheet(sheetId, cfg.aba_meta_ads           || 'meta_ads'),
+    fetchSheet(sheetId, cfg.aba_orcamentos         || 'orcamentos'),
+    fetchSheet(sheetId, cfg.aba_vendas             || 'vendas'),
+    fetchSheet(sheetId, cfg.aba_historico          || 'historico'),
+    fetchSheet(sheetId, cfg.aba_historico_semanal  || 'historico_semanal'),
   ]);
 
   // Populate
@@ -599,8 +606,14 @@ async function init() {
     vendas:      vRows?.[0]?.orcamentos_fechados,
   });
 
-  // Charts
-  initCharts(hRows, cfg.cor);
+  // Store globally for view toggle
+  window._hRows    = hRows;
+  window._hSemRows = hSemRows;
+  window._brandColor = cfg.cor;
+  window._currentView = 'mensal';
+
+  // Charts — default mensal
+  initCharts(hRows, cfg.cor, false);
 
   // Show dashboard
   setTimeout(() => {
@@ -610,7 +623,17 @@ async function init() {
   }, 600);
 }
 
-function changePeriod() { /* Reload with new period — extend as needed */ init(); }
+function changePeriod() { init(); }
+
+function changeView() {
+  const view = document.getElementById('viewSelect').value;
+  window._currentView = view;
+  // Re-render charts with correct data
+  if (window._hRows && window._hSemRows) {
+    const data = view === 'semanal' ? window._hSemRows : window._hRows;
+    initCharts(data, window._brandColor, view === 'semanal');
+  }
+}
 
 init();
 </script>
