@@ -168,6 +168,20 @@ html,body{min-height:100vh;background:var(--bg);color:var(--text);font-family:'D
       <option value="ano">Este ano</option>
       <option value="mes_a_mes">Mês a mês</option>
     </select>
+    <select class="ctrl-select" id="mesSelect" onchange="changeMes()" style="display:none">
+      <option value="Jan">Janeiro</option>
+      <option value="Fev">Fevereiro</option>
+      <option value="Mar">Março</option>
+      <option value="Abr">Abril</option>
+      <option value="Mai">Maio</option>
+      <option value="Jun">Junho</option>
+      <option value="Jul">Julho</option>
+      <option value="Ago">Agosto</option>
+      <option value="Set">Setembro</option>
+      <option value="Out">Outubro</option>
+      <option value="Nov">Novembro</option>
+      <option value="Dez">Dezembro</option>
+    </select>
   </div>
 </header>
 
@@ -621,10 +635,18 @@ function renderPeriod() {
 
   updateDateLabel(period, isSemanal);
 
-  // Mês a mês: cards mostram o mês atual, gráficos mostram todos os meses
-  const cardRows = mesAMes ? filterPeriod(allRows,'mes_atual',false) : {cur, prev};
-  const cardAgg  = mesAMes ? aggregate(cardRows.cur) : curAgg;
-  const cardPrev = mesAMes ? aggregate(cardRows.prev) : prevAgg;
+  // Mês a mês: cards mostram o mês selecionado, gráficos mostram todos os meses
+  let cardAgg = curAgg, cardPrev = prevAgg;
+  if (mesAMes) {
+    const mesSel = document.getElementById('mesSelect')?.value || getMesAtual();
+    const mesIdx = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'].indexOf(mesSel);
+    const mesAntSel = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'][(mesIdx-1+12)%12];
+    const ano = getAnoAtual();
+    const rowsMes  = (allRows||[]).filter(r=>r.mes===mesSel  && (parseNum(r.ano)===ano||!r.ano));
+    const rowsAnt  = (allRows||[]).filter(r=>r.mes===mesAntSel && (parseNum(r.ano)===ano||!r.ano));
+    cardAgg  = aggregate(rowsMes);
+    cardPrev = aggregate(rowsAnt);
+  }
 
   populateGoogle(cardAgg, cardPrev);
   populateMeta(cardAgg, cardPrev);
@@ -680,7 +702,20 @@ async function init() {
   }, 600);
 }
 
-function changePeriod() { renderPeriod(); }
+function changePeriod() {
+  const period = document.getElementById('periodSelect').value;
+  const mesSelect = document.getElementById('mesSelect');
+  if (period === 'mes_a_mes') {
+    mesSelect.style.display = 'block';
+    // Set default to current month
+    mesSelect.value = getMesAtual();
+  } else {
+    mesSelect.style.display = 'none';
+  }
+  renderPeriod();
+}
+function changeMes() { renderPeriod(); }
+
 function changeView() {
   const view = document.getElementById('viewSelect').value;
   const sel  = document.getElementById('periodSelect');
