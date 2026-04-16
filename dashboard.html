@@ -166,6 +166,7 @@ html,body{min-height:100vh;background:var(--bg);color:var(--text);font-family:'D
       <option value="mes_anterior">Mês anterior</option>
       <option value="3meses">Últimos 3 meses</option>
       <option value="ano">Este ano</option>
+      <option value="mes_a_mes">Mês a mês</option>
     </select>
   </div>
 </header>
@@ -278,7 +279,8 @@ html,body{min-height:100vh;background:var(--bg);color:var(--text);font-family:'D
       <div class="legend-row">
         <div class="leg"><div class="leg-dot" style="background:#4A9EFF"></div>Total Orçado</div>
         <div class="leg"><div class="leg-dot" style="background:#3ED98A"></div>Valor de Venda</div>
-        <div class="leg"><div class="leg-dot" style="background:var(--brand)"></div>Novos Clientes</div>
+        <div class="leg"><div class="leg-dot" style="background:var(--brand)"></div>Orç. Novos Clientes</div>
+        <div class="leg"><div class="leg-dot" style="background:#FF5A5A"></div>Venda Novos Clientes</div>
       </div>
       <div style="position:relative;height:200px"><canvas id="barChart" role="img" aria-label="Orçamentos e vendas mensais">Orçamentos e vendas por mês.</canvas></div>
     </div>
@@ -286,7 +288,7 @@ html,body{min-height:100vh;background:var(--bg);color:var(--text);font-family:'D
     <div class="cb">
       <div class="ct">Faturamento Geral</div>
       <div class="legend-row">
-        <div class="leg"><div class="leg-dot" style="background:#4A9EFF"></div>Vol. Orçamentos</div>
+        <div class="leg"><div class="leg-dot" style="background:#4A9EFF"></div>Orçamentos Geral</div>
         <div class="leg"><div class="leg-dot" style="background:#3ED98A;border:1px dashed rgba(62,217,138,.5)"></div>Vendas Geral</div>
       </div>
       <div style="position:relative;height:200px"><canvas id="lineChart" role="img" aria-label="Faturamento geral ao longo do tempo">Faturamento geral.</canvas></div>
@@ -368,9 +370,18 @@ function filterPeriod(rows, period, isSemanal) {
   const mesAnt   = getMesAnterior();
 
   if (isSemanal) {
-    // Para semanal filtra por número de semanas
-    const n = period==='semana_atual'?1 : period==='4semanas'?4 : period==='12semanas'?12 : period==='26semanas'?26 : 4;
     const validas = rows.filter(r=>r.semana&&String(r.semana).includes(String(ano)));
+    if (period==='semana_atual') {
+      const cur  = validas.slice(-1);
+      const prev = validas.slice(-2,-1);
+      return {cur, prev};
+    }
+    if (period==='semana_anterior') {
+      const cur  = validas.slice(-2,-1);
+      const prev = validas.slice(-3,-2);
+      return {cur, prev};
+    }
+    const n = period==='4semanas'?4 : period==='12semanas'?12 : period==='26semanas'?26 : 4;
     const cur  = validas.slice(-n);
     const prev = validas.slice(-n*2, -n);
     return {cur, prev};
@@ -393,15 +404,14 @@ function filterPeriod(rows, period, isSemanal) {
     const ant3     = [MESES[(idx-5+12)%12], MESES[(idx-4+12)%12], MESES[(idx-3+12)%12]];
     cur  = validas.filter(r=>ultimos3.includes(r.mes));
     prev = validas.filter(r=>ant3.includes(r.mes));
-  } else if (period==='ano') {
+  } else if (period==='ano' || period==='mes_a_mes') {
     cur  = validas;
     prev = [];
   } else {
-    // default: mês atual
     cur  = validas.filter(r=>r.mes===mesAtual);
     prev = validas.filter(r=>r.mes===mesAnt);
   }
-  return {cur, prev};
+  return {cur, prev, mesAMes: period==='mes_a_mes'};
 }
 
 // ─── AGGREGATE ROWS ──────────────────────────────────────────
@@ -583,14 +593,16 @@ function initCharts(rows, brandColor, isSemanal) {
 function updateDateLabel(period, isSemanal) {
   const hoje = new Date();
   const labels = {
-    mes_atual:    `${getMesAtual()}/${getAnoAtual()}`,
-    mes_anterior: `${getMesAnterior()}/${getAnoAtual()}`,
-    '3meses':     `Últimos 3 meses`,
-    ano:          `Ano ${getAnoAtual()}`,
-    semana_atual: `Semana atual`,
-    '4semanas':   `Últimas 4 semanas`,
-    '12semanas':  `Últimas 12 semanas`,
-    '26semanas':  `Últimas 26 semanas`,
+    mes_atual:       `${getMesAtual()}/${getAnoAtual()}`,
+    mes_anterior:    `${getMesAnterior()}/${getAnoAtual()}`,
+    '3meses':        `Últimos 3 meses`,
+    ano:             `Ano ${getAnoAtual()}`,
+    mes_a_mes:       `Mês a mês — ${getAnoAtual()}`,
+    semana_atual:    `Semana atual`,
+    semana_anterior: `Semana anterior`,
+    '4semanas':      `Últimas 4 semanas`,
+    '12semanas':     `Últimas 12 semanas`,
+    '26semanas':     `Últimas 26 semanas`,
   };
   document.getElementById('dateRange').textContent = labels[period] || `${getMesAtual()}/${getAnoAtual()}`;
 }
@@ -603,15 +615,21 @@ function renderPeriod() {
   const allRows  = isSemanal ? window._hSemRows : window._hRows;
   if (!allRows) return;
 
-  const {cur, prev} = filterPeriod(allRows, period, isSemanal);
+  const {cur, prev, mesAMes} = filterPeriod(allRows, period, isSemanal);
   const curAgg  = aggregate(cur);
   const prevAgg = aggregate(prev);
 
   updateDateLabel(period, isSemanal);
-  populateGoogle(curAgg, prevAgg);
-  populateMeta(curAgg, prevAgg);
-  populateOrcVendas(curAgg, prevAgg, window._metaRoas);
-  renderFunnel(curAgg);
+
+  // Mês a mês: cards mostram o mês atual, gráficos mostram todos os meses
+  const cardRows = mesAMes ? filterPeriod(allRows,'mes_atual',false) : {cur, prev};
+  const cardAgg  = mesAMes ? aggregate(cardRows.cur) : curAgg;
+  const cardPrev = mesAMes ? aggregate(cardRows.prev) : prevAgg;
+
+  populateGoogle(cardAgg, cardPrev);
+  populateMeta(cardAgg, cardPrev);
+  populateOrcVendas(cardAgg, cardPrev, window._metaRoas);
+  renderFunnel(cardAgg);
   initCharts(cur, window._brandColor, isSemanal);
 }
 
@@ -669,6 +687,7 @@ function changeView() {
   if (view==='semanal') {
     sel.innerHTML = `
       <option value="semana_atual">Esta semana</option>
+      <option value="semana_anterior">Semana anterior</option>
       <option value="4semanas" selected>Últimas 4 semanas</option>
       <option value="12semanas">Últimas 12 semanas</option>
       <option value="26semanas">Últimas 26 semanas</option>`;
@@ -677,7 +696,8 @@ function changeView() {
       <option value="mes_atual" selected>Este mês</option>
       <option value="mes_anterior">Mês anterior</option>
       <option value="3meses">Últimos 3 meses</option>
-      <option value="ano">Este ano</option>`;
+      <option value="ano">Este ano</option>
+      <option value="mes_a_mes">Mês a mês</option>`;
   }
   renderPeriod();
 }
