@@ -375,13 +375,23 @@ async function fetchSheet(spreadsheetId, sheetName) {
 
 // ─── FUNNEL RENDER ───────────────────────────────────────────────────────────
 function renderFunnel(data) {
+  // Calculate dynamic widths based on actual values
+  const imp  = parseNum(data.impressoes) || 0;
+  const cli  = parseNum(data.cliques)    || 0;
+  const msg  = parseNum(data.mensagens)  || 0;
+  const orc  = parseNum(data.orcamentos) || 0;
+  const ven  = parseNum(data.vendas)     || 0;
+  const ctr  = parseNum(data.ctr)        || 0;
+  const max  = imp || 1;
+  const pct  = v => Math.max(28, Math.round((v / max) * 100)) + '%';
+
   const steps = [
-    { label: 'Impressões', val: fmt.num(data.impressoes),    bg: '#1A3A6C', w: '100%' },
-    { label: 'Cliques',    val: fmt.num(data.cliques),       bg: '#1A4A8C', w: '90%'  },
-    { label: 'CTR',        val: fmt.pct(data.ctr),           bg: '#1E5AAC', w: '78%'  },
-    { label: 'Mensagens',  val: fmt.num(data.mensagens),     bg: '#2468B8', w: '62%'  },
-    { label: 'Orçamentos', val: fmt.num(data.orcamentos),    bg: '#2A76C4', w: '46%'  },
-    { label: 'Vendas',     val: fmt.num(data.vendas),        bg: 'var(--brand)', w: '30%', dark: true },
+    { label: 'Impressões', val: fmt.num(imp), bg: '#1A3A6C', w: '100%' },
+    { label: 'Cliques',    val: fmt.num(cli), bg: '#1A4A8C', w: imp > 0 ? pct(cli * 8) : '85%' },
+    { label: 'CTR',        val: fmt.pct(ctr), bg: '#1E5AAC', w: '72%' },
+    { label: 'Mensagens',  val: msg > 0 ? fmt.num(msg) : '—', bg: '#2468B8', w: '58%' },
+    { label: 'Orçamentos', val: orc > 0 ? fmt.num(orc) : '—', bg: '#2A76C4', w: '44%' },
+    { label: 'Vendas',     val: ven > 0 ? fmt.num(ven) : '—', bg: 'var(--brand)', w: '30%', dark: true },
   ];
   document.getElementById('funnelChart').innerHTML = steps.map(s => `
     <div class="fs" style="background:${s.bg};width:${s.w}">
@@ -398,10 +408,10 @@ Chart.defaults.borderColor = 'rgba(255,255,255,0.07)';
 Chart.defaults.font.family = "'DM Sans', sans-serif";
 
 function initCharts(historico, brandColor) {
-  const months = historico?.map(r => r.mes || r.month || '') || ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
-  const orcData = historico?.map(r => Number(r.orcamentos || r.total_orcado || 0)) || Array(12).fill(0);
-  const venData = historico?.map(r => Number(r.vendas || r.valor_venda || 0)) || Array(12).fill(0);
-  const novData = historico?.map(r => Number(r.novos_clientes || 0)) || Array(12).fill(0);
+  const months = historico?.map(r => r.mes || r.month || '').filter(Boolean) || ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+  const orcData = historico?.map(r => parseNum(r.orcamentos) || parseNum(r.total_orcado) || 0) || Array(12).fill(0);
+  const venData = historico?.map(r => parseNum(r.vendas) || parseNum(r.valor_venda) || 0) || Array(12).fill(0);
+  const novData = historico?.map(r => parseNum(r.novos_clientes) || 0) || Array(12).fill(0);
 
   if (barChart) barChart.destroy();
   barChart = new Chart(document.getElementById('barChart'), {
@@ -516,10 +526,10 @@ function populateVendas(rows, metaRoas) {
 function populateKpis(gRows, vRows) {
   const g = gRows?.[0] || {};
   const v = vRows?.[0]  || {};
-  const invest = (Number(g.custo || 0));
+  const invest = parseNum(g.custo) || 0;
   set('kpi-invest', fmt.brl(invest));
-  const totalOrc = vRows?.[0]?.orcamentos_fechados || 0;
-  const totalImpr = g.impressoes || 0;
+  const totalOrc  = parseNum(vRows?.[0]?.orcamentos_fechados) || 0;
+  const totalImpr = parseNum(g.impressoes) || 0;
   set('kpi-conv', totalImpr > 0 && totalOrc > 0 ? fmt.pct(totalOrc / totalImpr * 100) : '—');
 }
 
