@@ -306,14 +306,29 @@ html,body{min-height:100vh;background:var(--bg);color:var(--text);font-family:'D
 
 <script>
 // ─── UTILITIES ──────────────────────────────────────────────────────────────
+// Limpa valores que chegam formatados do Sheets: "R$ 302,98" → 302.98 | "8,42%" → 8.42
+function parseNum(v) {
+  if (v == null || v === '' || v === '-') return null;
+  if (typeof v === 'number') return v;
+  return parseFloat(
+    String(v)
+      .replace(/R\$\s*/g, '')   // remove R$
+      .replace(/%/g, '')         // remove %
+      .replace(/\./g, '')        // remove pontos de milhar
+      .replace(',', '.')         // vírgula → ponto decimal
+      .trim()
+  ) || null;
+}
+
 const fmt = {
-  brl: v => v != null && v !== '' ? 'R$ ' + Number(v).toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2}) : '—',
-  pct: v => v != null && v !== '' ? Number(v).toLocaleString('pt-BR', {minimumFractionDigits:1, maximumFractionDigits:1}) + '%' : '—',
-  num: v => v != null && v !== '' ? Number(v).toLocaleString('pt-BR') : '—',
-  x:   v => v != null && v !== '' ? Number(v).toFixed(2) + 'x' : '—',
+  brl: v => { const n = parseNum(v); return n != null ? 'R$ ' + n.toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2}) : '—'; },
+  pct: v => { const n = parseNum(v); return n != null ? n.toLocaleString('pt-BR', {minimumFractionDigits:1, maximumFractionDigits:1}) + '%' : '—'; },
+  num: v => { const n = parseNum(v); return n != null ? n.toLocaleString('pt-BR') : '—'; },
+  x:   v => { const n = parseNum(v); return n != null ? n.toFixed(2) + 'x' : '—'; },
 };
 
 function delta(val, prev) {
+  val = parseNum(val); prev = parseNum(prev);
   if (!val || !prev || prev == 0) return { cls: 'dn', txt: 'N/A' };
   const pct = ((val - prev) / Math.abs(prev)) * 100;
   const sign = pct >= 0 ? '+' : '';
