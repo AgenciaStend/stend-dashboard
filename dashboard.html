@@ -99,14 +99,14 @@ html,body{min-height:100vh;background:var(--bg);color:var(--text);font-family:'D
 /* ROWS */
 .platforms-row{display:grid;grid-template-columns:1fr 1fr;gap:14px}
 .business-row{display:grid;grid-template-columns:1fr 1fr;gap:14px}
-.charts-row{display:grid;grid-template-columns:220px 1fr 1fr;gap:14px}
+.charts-row{display:grid;grid-template-columns:200px 1fr 1fr;gap:12px}
 .bottom-row{display:grid;grid-template-columns:1fr 2fr;gap:14px}
 
 /* CHART BOX */
 .cb{background:var(--card);border:1px solid var(--border);border-radius:13px;padding:18px 20px}
 .ct{font-family:'Syne',sans-serif;font-weight:600;font-size:12px;letter-spacing:-.1px;margin-bottom:12px}
-.legend-row{display:flex;gap:14px;margin-bottom:10px;flex-wrap:wrap}
-.leg{display:flex;align-items:center;gap:4px;font-size:10px;color:var(--text2)}
+.legend-row{display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;align-items:center}
+.leg{display:flex;align-items:center;gap:4px;font-size:9px;color:var(--text2);white-space:nowrap}
 .leg-dot{width:8px;height:8px;border-radius:2px;flex-shrink:0}
 
 /* FUNNEL */
@@ -278,8 +278,7 @@ html,body{min-height:100vh;background:var(--bg);color:var(--text);font-family:'D
       <div class="legend-row">
         <div class="leg"><div class="leg-dot" style="background:#4A9EFF"></div>Total Orçado</div>
         <div class="leg"><div class="leg-dot" style="background:#3ED98A"></div>Valor de Venda</div>
-        Orç. Novos Clientes</div>
-          <div class="leg"><div class="leg-dot" style="background:#FF5A5A"></div>Venda Novos Clientes</div>
+        <div class="leg"><div class="leg-dot" style="background:var(--brand)"></div>Novos Clientes</div>
       </div>
       <div style="position:relative;height:200px"><canvas id="barChart" role="img" aria-label="Orçamentos e vendas mensais">Orçamentos e vendas por mês.</canvas></div>
     </div>
@@ -287,7 +286,7 @@ html,body{min-height:100vh;background:var(--bg);color:var(--text);font-family:'D
     <div class="cb">
       <div class="ct">Faturamento Geral</div>
       <div class="legend-row">
-        <div class="leg"><div class="leg-dot" style="background:#4A9EFF"></div>Orçamentos Geral</div>
+        <div class="leg"><div class="leg-dot" style="background:#4A9EFF"></div>Vol. Orçamentos</div>
         <div class="leg"><div class="leg-dot" style="background:#3ED98A;border:1px dashed rgba(62,217,138,.5)"></div>Vendas Geral</div>
       </div>
       <div style="position:relative;height:200px"><canvas id="lineChart" role="img" aria-label="Faturamento geral ao longo do tempo">Faturamento geral.</canvas></div>
